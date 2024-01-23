@@ -1,9 +1,5 @@
 package com.github.dig.endervaults.bukkit.vault;
 
-import com.github.dig.endervaults.api.EnderVaultsPlugin;
-import com.github.dig.endervaults.api.VaultPluginProvider;
-import com.github.dig.endervaults.nms.NMSProvider;
-import com.github.dig.endervaults.nms.VaultNMS;
 import com.github.dig.endervaults.api.util.VaultSerializable;
 import com.github.dig.endervaults.api.vault.Vault;
 import lombok.Getter;
@@ -15,21 +11,15 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 
 @Log
 public class BukkitVault implements Vault, VaultSerializable {
 
-    private final VaultNMS nmsBridge = NMSProvider.getBridge();
-
-    private UUID id;
-    private UUID ownerUUID;
+    private final UUID id;
+    private final UUID ownerUUID;
     @Getter
     private Inventory inventory;
     private Map<String, Object> metadata = new HashMap<>();
@@ -88,52 +78,12 @@ public class BukkitVault implements Vault, VaultSerializable {
     @Nullable
     public String encode() {
         ItemStack[] inventoryContents = inventory.getContents();
-
-        Class<?> nmsItemStackClazz;
-        try {
-            nmsItemStackClazz = nmsBridge.getItemStackClass();
-        } catch (ClassNotFoundException e) {
-            log.log(Level.SEVERE, "[EnderVaults] Unable to find craft item stack class.", e);
-            return null;
-        }
-
-        Object nmsItemArray = Array.newInstance(nmsItemStackClazz, inventoryContents.length);
-        for (int i = 0; i < inventoryContents.length; i++) {
-            try {
-                Array.set(nmsItemArray, i, toNMSItem(inventoryContents[i]));
-            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                log.log(Level.SEVERE, "[EnderVaults] Unable to encode item.", e);
-            }
-        }
-
-        try {
-            return nmsBridge.encode((Object[]) nmsItemArray);
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
-            log.log(Level.SEVERE, "[EnderVaults] Unable to encode bukkit vault.", e);
-            return null;
-        }
+        return BukkitVaultSerialization.encodeItemStacksToString(inventoryContents);
     }
 
     @Override
     public void decode(String encoded) {
-        Object[] nmsItemStacks;
-        try {
-            nmsItemStacks = nmsBridge.decode(encoded);
-        } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
-            log.log(Level.SEVERE, "[EnderVaults] Unable to decode bukkit vault.", e);
-            return;
-        }
-
-        ItemStack[] inventoryContents = new ItemStack[nmsItemStacks.length];
-        for (int i = 0; i < nmsItemStacks.length; i++) {
-            try {
-                inventoryContents[i] = toBukkitItem(nmsItemStacks[i]);
-            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                log.log(Level.SEVERE, "[EnderVaults] Unable to decode item.", e);
-            }
-        }
-
-        inventory.setContents(inventoryContents);
+        inventory.setContents(BukkitVaultSerialization.decodeItemStacks(encoded));
     }
 
     public void launchFor(Player player) {
@@ -142,28 +92,5 @@ public class BukkitVault implements Vault, VaultSerializable {
 
     public boolean compare(Inventory inventory) {
         return this.inventory == inventory;
-    }
-
-    private ItemStack toBukkitItem(Object itemStack) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Class<?> nmsItemStackClazz;
-        try {
-            nmsItemStackClazz = nmsBridge.getItemStackClass();
-        } catch (ClassNotFoundException e) {
-            log.log(Level.SEVERE, "[EnderVaults] Unable to find craft item stack class.", e);
-            return null;
-        }
-
-        Method asBukkitCopy = getCraftItemStackClass().getMethod("asBukkitCopy", nmsItemStackClazz);
-        return (ItemStack) asBukkitCopy.invoke(null, itemStack);
-    }
-
-    private Object toNMSItem(ItemStack itemStack) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method asNMSCopy = getCraftItemStackClass().getMethod("asNMSCopy", ItemStack.class);
-        return asNMSCopy.invoke(null, itemStack);
-    }
-
-    private Class<?> getCraftItemStackClass() throws ClassNotFoundException {
-        EnderVaultsPlugin plugin = VaultPluginProvider.getPlugin();
-        return Class.forName("org.bukkit.craftbukkit." + plugin.getVersion().toString() + ".inventory.CraftItemStack");
     }
 }

@@ -8,8 +8,7 @@ import com.github.dig.endervaults.api.vault.Vault;
 import com.github.dig.endervaults.api.vault.VaultRegistry;
 import com.github.dig.endervaults.api.vault.metadata.VaultDefaultMetadata;
 import com.github.dig.endervaults.bukkit.EVBukkitPlugin;
-import com.github.dig.endervaults.nms.MinecraftVersion;
-import de.tr7zw.changeme.nbtapi.NBTItem;
+import de.tr7zw.nbtapi.NBTItem;
 import lombok.extern.java.Log;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -33,8 +32,6 @@ public class SelectorInventory {
     private final EVBukkitPlugin plugin = (EVBukkitPlugin) VaultPluginProvider.getPlugin();
     private final VaultRegistry registry = plugin.getRegistry();
     private final UserPermission<Player> permission = plugin.getPermission();
-    private final MinecraftVersion version = plugin.getVersion();
-    private final boolean useLegacyMaterials = version.ordinal() < MinecraftVersion.v1_13_R1.ordinal();
 
     private final UUID ownerUUID;
     private final int page;
@@ -131,11 +128,6 @@ public class SelectorInventory {
 
         ItemStack item = new ItemStack(material, 1);
 
-        // Use old material data method (< 1.13)
-        if (useLegacyMaterials && data > 0 && icon == null) {
-            item.setDurability((byte) data);
-        }
-
         ItemMeta meta = item.getItemMeta();
 
         String title = configuration.getString("selector.template.unlocked.title")
@@ -174,9 +166,7 @@ public class SelectorInventory {
     private Material getGlass(int filled, int total) {
         double percent = ((double) filled / (double) total) * 100;
 
-        if (useLegacyMaterials) {
-            return Material.valueOf("STAINED_GLASS_PANE");
-        } else if (percent >= 100) {
+        if (percent >= 100) {
             return Material.RED_STAINED_GLASS_PANE;
         } else if (percent > 60) {
             return Material.ORANGE_STAINED_GLASS_PANE;
@@ -209,24 +199,17 @@ public class SelectorInventory {
         FileConfiguration configuration = plugin.getConfigFile().getConfiguration();
 
         Material material;
-        int data = 0;
         switch (mode) {
             case STATIC:
                 material = Material.valueOf(configuration.getString("selector.static-item.locked", Material.REDSTONE_BLOCK.toString()));
                 break;
             case PANE_BY_FILL:
             default:
-                material = useLegacyMaterials ? Material.valueOf("STAINED_GLASS_PANE") : Material.GRAY_STAINED_GLASS_PANE;
-                data = 7;
+                material = Material.GRAY_STAINED_GLASS_PANE;
                 break;
         }
 
         ItemStack item = new ItemStack(material, 1);
-
-        // Use old material data method (< 1.13)
-        if (useLegacyMaterials && data > 0) {
-            item.setDurability((byte) data);
-        }
 
         ItemMeta meta = item.getItemMeta();
 
@@ -234,9 +217,9 @@ public class SelectorInventory {
         meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', title));
 
         meta.setLore(configuration.getStringList("selector.template.locked.lore")
-                        .stream()
-                        .map(s -> ChatColor.translateAlternateColorCodes('&', s))
-                        .collect(Collectors.toList()));
+                .stream()
+                .map(s -> ChatColor.translateAlternateColorCodes('&', s))
+                .collect(Collectors.toList()));
 
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES,
                 ItemFlag.HIDE_UNBREAKABLE,

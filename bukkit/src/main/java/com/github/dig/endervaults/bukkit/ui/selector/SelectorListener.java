@@ -8,7 +8,7 @@ import com.github.dig.endervaults.api.vault.metadata.VaultDefaultMetadata;
 import com.github.dig.endervaults.bukkit.ui.icon.SelectIconInventory;
 import com.github.dig.endervaults.bukkit.vault.BukkitVault;
 import com.github.dig.endervaults.bukkit.vault.BukkitVaultFactory;
-import de.tr7zw.changeme.nbtapi.NBTItem;
+import de.tr7zw.nbtapi.NBTItem;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -71,7 +71,7 @@ public class SelectorListener implements Listener {
                     if (vaultOptional.isPresent()) {
                         vault = (BukkitVault) vaultOptional.get();
                     } else {
-                        vault = (BukkitVault) BukkitVaultFactory.create(vaultOwnerUUID, new HashMap<String, Object>(){{
+                        vault = (BukkitVault) BukkitVaultFactory.create(vaultOwnerUUID, new HashMap<String, Object>() {{
                             put(VaultDefaultMetadata.ORDER.getKey(), orderValue);
                         }});
                         registry.register(vaultOwnerUUID, vault);

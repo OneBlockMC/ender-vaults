@@ -4,7 +4,7 @@ import com.github.dig.endervaults.api.VaultPluginProvider;
 import com.github.dig.endervaults.api.lang.Lang;
 import com.github.dig.endervaults.api.vault.Vault;
 import com.github.dig.endervaults.bukkit.EVBukkitPlugin;
-import de.tr7zw.changeme.nbtapi.NBTItem;
+import de.tr7zw.nbtapi.NBTItem;
 import lombok.extern.java.Log;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
